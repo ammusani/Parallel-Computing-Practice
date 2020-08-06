@@ -1,0 +1,3 @@
+The following code takes input of n, which is the dimension value of a n * n square matrix and n * 1 vector. Generates random n ^ 2 values and assigns to the matrix, random n values to vector, does matrix, vector multiplication of A x = b, and prints the value of b vector.
+
+
