@@ -8,7 +8,7 @@ int matrix_vector_mult(int *A, int *x, int rank, int n) {
 	//Sequential vector multiplication:
 	int bi = 0;
 	for (int j = 0; j < n; j++) {
-		bi += A [rank * n + j] * x [j];
+		bi += A [j] * x [j];
 	}
 	return bi;
 	
@@ -24,22 +24,31 @@ int main(int argc, char **argv) {
 	
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-	int A[n * n];
 	int x[n];
 
 	if (rank == 0) {
+
+		int A0 [n];
+		int Ap [n];
 	
 		// Use current time as seed for random number generator.
 		srand (time(0));
 		printf ("%s", "Random values for the square matrix are:\n");
 
+		for(int j = 0; j < n; j++) {
+			A0 [j] = rand() % 193;
+			printf("%d ", A0[j]);
+		}
+		puts(" ");
+
 		// Generating random values less than the 45th prime number and assigning to the matrix A.
-		for (int i = 0; i < n; i++) {
+		for (int i = 1; i < n; i++) {
 			for (int j = 0; j < n; j++) {
-				A [i * n + j] = rand () % 193;
-				printf ("%d ", A [i * n + j]);
+				Ap [j] = rand () % 193;
+				printf ("%d ", Ap [j]);
 			}
 			puts ("");
+			MPI_Send(&Ap, n, MPI_INT, i, i, MPI_COMM_WORLD);
 		}
 		puts("");
 
@@ -55,10 +64,10 @@ int main(int argc, char **argv) {
 		int *b;
 		b = (int *) malloc (n * sizeof (int));
 
-		MPI_Bcast(&A, n * n, MPI_INT, 0, MPI_COMM_WORLD);
+		
 		MPI_Bcast(&x, n, MPI_INT, 0, MPI_COMM_WORLD);
 		
-		b[rank] = matrix_vector_mult(A, x, rank, n);
+		b[rank] = matrix_vector_mult(A0, x, rank, n);
 		
 		for(int i = 1; i < n; i++) MPI_Recv(&b[i], 1, MPI_INT, i, i, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
@@ -68,9 +77,10 @@ int main(int argc, char **argv) {
 		free (b);
 	}
 	else {
+		int A[n];
 		int b;
 		
-		MPI_Bcast(&A, n * n, MPI_INT, 0, MPI_COMM_WORLD);
+		MPI_Recv(&A, n, MPI_INT, 0, rank, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 		MPI_Bcast(&x, n, MPI_INT, 0, MPI_COMM_WORLD);
 
 		b = matrix_vector_mult(A, x, rank, n);
